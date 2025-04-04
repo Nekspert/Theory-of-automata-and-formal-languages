@@ -48,30 +48,32 @@ class SyntaxAnalyzer:
 
             if self.lexer.token.Type == TokenKind.Equal:
                 self.lexer.RecognizeNextToken()
-
-                if self.lexer.token.Type == TokenKind.Number:
-                    self.lexer.RecognizeNextToken()
-
-                    if self.lexer.token.Type == TokenKind.Number:
-                        self.lexer.RecognizeNextToken()
-                        return
-                    raise self.__SyntaxError('Ожидались цифры "01".')
-
-                elif self.lexer.token.Type == TokenKind.LeftParen:
-                    self.lexer.RecognizeNextToken()
-                    self.O()
-
-                    if self.lexer.token.Type == TokenKind.RightParen:
-                        self.lexer.RecognizeNextToken()
-                        return
-                    raise self.__SyntaxError('Ожидалась закрывающая правая скобка.')
-
-                else:
-                    raise self.__SyntaxError('Ожидались либо цифры "01", либо открывающая левая скобка.')
+                self.C()
             else:
                 raise self.__SyntaxError('Ожидался символ "=".')
         else:
             raise self.__SyntaxError('Ожидались буквы вида: "abcd" (токен букв).')
+
+    def C(self):
+        if self.lexer.token.Type == TokenKind.Number:
+            self.lexer.RecognizeNextToken()
+
+            if self.lexer.token.Type == TokenKind.Number:
+                self.lexer.RecognizeNextToken()
+                return
+            raise self.__SyntaxError('Ожидались цифры "01" (токен чисел).')
+
+        elif self.lexer.token.Type == TokenKind.LeftParen:
+            self.lexer.RecognizeNextToken()
+            self.O()
+
+            if self.lexer.token.Type == TokenKind.RightParen:
+                self.lexer.RecognizeNextToken()
+                return
+            raise self.__SyntaxError('Ожидалась закрывающая правая скобка.')
+
+        else:
+            raise self.__SyntaxError('Ожидались либо цифры "01" (токен чисел), либо открывающая левая скобка.')
 
     def ParseText(self):
         self.P()
