@@ -8,18 +8,21 @@ from SyntaxAnalyzer import SyntaxAnalyzer, SynAnException
 class LexerApp:
     def __init__(self, root):
         self.root = root
-        root.title('Лабораторная работа № 2 - Синтаксический анализатор')
+        root.title('Лабораторная работа № 3 - Построение синтаксического дерева')
 
         root.geometry("1024x360")
         root.resizable(True, True)
         root.minsize(800, 600)
 
-        # Ввод текста
-        self.input_frame = ttk.LabelFrame(root, text='Исходный код')
-        self.input_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+        # Вместо обычного root.pack используем панель
+        self.main_pane = ttk.Panedwindow(root, orient=tk.HORIZONTAL)
+        self.main_pane.pack(fill=tk.BOTH, expand=True)
 
-        self.input_text = scrolledtext.ScrolledText(self.input_frame, width=80, height=20)
+        # Левая панель (ввод)
+        self.input_frame = ttk.LabelFrame(self.main_pane, text='Исходный код')
+        self.input_text = scrolledtext.ScrolledText(self.input_frame, width=40, height=20)
         self.input_text.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        self.main_pane.add(self.input_frame, weight=1)
 
         # Кнопки
         self.button_frame = ttk.Frame(root)
@@ -35,9 +38,25 @@ class LexerApp:
         self.messages = scrolledtext.ScrolledText(self.messages_frame, height=8, state='disabled')
         self.messages.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
 
+        # Правая панель (дерево)
+        self.tree_frame = ttk.LabelFrame(self.main_pane, text='Синтаксическое дерево')
+        self.tree_output = scrolledtext.ScrolledText(self.tree_frame, width=40, height=20, state='disabled')
+        self.tree_output.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
+        self.main_pane.add(self.tree_frame, weight=1)
+
+    def add_message(self, text):
+        self.messages.configure(state='normal')
+        self.messages.insert(tk.END, text)
+        self.messages.configure(state='disabled')
+        self.messages.see(tk.END)
+
     def analyze(self):
         self.messages.configure(state='normal')
         self.messages.delete('1.0', tk.END)
+
+        # Очистим перед выводом
+        self.tree_output.configure(state='normal')
+        self.tree_output.delete('1.0', tk.END)
 
         input_text = self.input_text.get('1.0', tk.END).strip()
         if not input_text:
@@ -50,22 +69,32 @@ class LexerApp:
             lexer = LexicalAnalyzer(transliterator)
             syntax_analyzer = SyntaxAnalyzer(lexer)
 
-            syntax_analyzer.ParseText()
+            root_node = syntax_analyzer.ParseText()
 
-            self.messages.insert(tk.END, "Ошибок не обнаружено.\n")
+            # Создание и запуск Visitor
+            from Visitor import PrintVisitor
+            visitor = PrintVisitor()
+            root_node.accept(visitor)
 
+            result = visitor.get_result()
+
+            # Выводим в окно синтаксического дерева
+            self.tree_output.insert(tk.END, result)
+            self.tree_output.configure(state='disabled')
+
+            self.add_message("Ошибок не обнаружено.\n")
         except LexAnException as e:
             error_msg = f"Лексическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n"
-            self.messages.insert(tk.END, error_msg)
+            self.add_message(error_msg)
             self.highlight_lex_error(e.LineIndex, e.SymIndex)
 
         except SynAnException as e:
             error_msg = f"Синтаксическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n"
-            self.messages.insert(tk.END, error_msg)
+            self.add_message(error_msg)
             self.highlight_syn_error(e.LineIndex, e.SymIndex, lexer)
 
         except Exception as e:
-            self.messages.insert(tk.END, f"Критическая ошибка: {str(e)}\n")
+            self.add_message(f"Критическая ошибка: {str(e)}\n")
 
         finally:
             self.messages.configure(state='disabled')
