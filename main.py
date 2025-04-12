@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, scrolledtext  # Добавьте этот импорт
+from tkinter import ttk, scrolledtext
 from LexicalAnalyzer import LexicalAnalyzer, LexAnException
 from Transliterator import Transliterator
 from SyntaxAnalyzer import SyntaxAnalyzer, SynAnException

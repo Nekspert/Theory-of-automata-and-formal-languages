@@ -42,7 +42,7 @@ class SyntaxAnalyzer:
             raise self.__SyntaxError('Ожидались либо запятая, либо конец текста.')
 
     def O(self):
-        """O → <2> = <1> <1> | <2> = (O)"""
+        """O → <2> = C  """
         if self.lexer.token.Type == TokenKind.Identifier:
             self.lexer.RecognizeNextToken()
 
@@ -55,6 +55,7 @@ class SyntaxAnalyzer:
             raise self.__SyntaxError('Ожидались буквы вида: "abcd" (токен букв).')
 
     def C(self):
+        """C-> <1> <1> | (O)"""
         if self.lexer.token.Type == TokenKind.Number:
             self.lexer.RecognizeNextToken()
 
