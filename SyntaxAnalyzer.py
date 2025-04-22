@@ -1,7 +1,7 @@
 from enum import Enum, auto
 
 from LexicalAnalyzer import LexicalAnalyzer, TokenKind
-from SyntaxTree import PNode, ONode, KNode1, KNode2, CNode1, CNode2, KNode, CNode
+from SyntaxTree import PNode, ONode, KNode1, KNode2, CNode1, CNode2, KNode, CNode, ReservedNode
 
 
 class SynAnException(Exception):
@@ -36,9 +36,10 @@ class SyntaxAnalyzer:
 
     def K(self) -> KNode:
         """K → , O K | ε"""
+        k = KNode1()
         if self.lexer.token.Type == TokenKind.Comma:
+            k.comma = ReservedNode(self.lexer.token.Value)
             self.lexer.RecognizeNextToken()
-            k = KNode1()
             k.O = self.O()
             k.K = self.K()
             return k
@@ -51,11 +52,11 @@ class SyntaxAnalyzer:
         """O → <2> = C"""
         o = ONode()
         if self.lexer.token.Type == TokenKind.Identifier:
-            o.second_word = self.lexer.token
+            o.second_word = ReservedNode(self.lexer.token.Value)
             self.lexer.RecognizeNextToken()
 
             if self.lexer.token.Type == TokenKind.Equal:
-                o.equal = self.lexer.token
+                o.equal = ReservedNode(self.lexer.token.Value)
                 self.lexer.RecognizeNextToken()
                 o.C = self.C()
                 return o
@@ -68,24 +69,24 @@ class SyntaxAnalyzer:
         """C-> <1> <1> | (O)"""
         if self.lexer.token.Type == TokenKind.Number:
             c = CNode1()
-            c.first_word = self.lexer.token
+            c.first_word1 = ReservedNode(self.lexer.token.Value)
             self.lexer.RecognizeNextToken()
 
             if self.lexer.token.Type == TokenKind.Number:
-                c.second_word = self.lexer.token
+                c.first_word2 = ReservedNode(self.lexer.token.Value)
                 self.lexer.RecognizeNextToken()
                 return c
             raise self.__SyntaxError('Ожидались две цифры "01".')
 
         elif self.lexer.token.Type == TokenKind.LeftParen:
             c = CNode2()
-            c.LeftParen = self.lexer.token
+            c.LeftParen = ReservedNode(self.lexer.token.Value)
             self.lexer.RecognizeNextToken()
 
             c.O = self.O()
 
             if self.lexer.token.Type == TokenKind.RightParen:
-                c.RightParen = self.lexer.token
+                c.RightParen = ReservedNode(self.lexer.token.Value)
                 self.lexer.RecognizeNextToken()
                 return c
             raise self.__SyntaxError('Ожидалась закрывающая правая скобка.')

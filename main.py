@@ -1,123 +1,119 @@
-import tkinter as tk
-from tkinter import ttk, scrolledtext
-from LexicalAnalyzer import LexicalAnalyzer, LexAnException
-from Transliterator import Transliterator
+import sys
+import traceback
+
+from PyQt6.QtWidgets import QTreeWidget
+from PyQt6.QtWidgets import QStyleFactory
+from PyQt6 import QtWidgets
+from PyQt6.QtGui import QTextCursor
+
+from SyntaxTree import *
+from Visitor import PrintVisitor
+from LexicalAnalyzer import LexAnException, LexicalAnalyzer
 from SyntaxAnalyzer import SyntaxAnalyzer, SynAnException
+from Transliterator import Transliterator
 
 
-class LexerApp:
-    def __init__(self, root):
-        self.root = root
-        root.title('Лабораторная работа № 3 - Построение синтаксического дерева')
+class FormMain(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.init_ui()
+        self.setWindowTitle("Лабораторная работа №3 - Построение синтаксического дерева")
+        self.setGeometry(100, 100, 1000, 800)
 
-        root.geometry("1024x360")
-        root.resizable(True, True)
-        root.minsize(800, 600)
+    def init_ui(self):
+        self.mainLayout = QtWidgets.QVBoxLayout()
 
-        # Вместо обычного root.pack используем панель
-        self.main_pane = ttk.Panedwindow(root, orient=tk.HORIZONTAL)
-        self.main_pane.pack(fill=tk.BOTH, expand=True)
+        self.topLayout = QtWidgets.QVBoxLayout()
+        self.middleLayout = QtWidgets.QHBoxLayout()
+        self.inputTextLayout = QtWidgets.QVBoxLayout()
+        self.syntaxTreeLayout = QtWidgets.QVBoxLayout()
+        self.bottomLayout = QtWidgets.QVBoxLayout()
+        self.info_label = QtWidgets.QLabel(
+            f"Слова первого типа: (111)*000(001)*\n"
+            f"Слова второго типа: (a|b|c|d)+ не должно заканчиваться символами bd\n"
+            f"Комментарий: # однострочный комментарий (как в PHP)\n\n"
+            f"КС-грамматика:\n"
+            f"П → ОК\n"
+            f"К → ,ОК | ε\n"
+            f"О → <2> = С\n"
+            f"С → <1> <1> | (О)\n")
+        self.input_text_label = QtWidgets.QLabel("Входной текст:")
+        self.input_text = QtWidgets.QPlainTextEdit()
+        self.analyze_button = QtWidgets.QPushButton("Анализировать текст")
+        self.messages_label = QtWidgets.QLabel("Сообщения:")
+        self.messages = QtWidgets.QPlainTextEdit()
+        self.messages.setReadOnly(True)
+        self.ast_tree_label = QtWidgets.QLabel("Синтаксическое дерево:")
+        self.ast_tree = QTreeWidget()
+        self.ast_tree.setHeaderHidden(True)
+        self.ast_tree.setRootIsDecorated(True)
+        self.ast_tree.setItemsExpandable(True)
+        self.ast_tree.setStyle(QStyleFactory.create("windows"))
+        self.topLayout.addWidget(self.info_label)
+        self.inputTextLayout.addWidget(self.input_text_label)
+        self.inputTextLayout.addWidget(self.input_text)
+        self.middleLayout.addLayout(self.inputTextLayout)
+        self.syntaxTreeLayout.addWidget(self.ast_tree_label)
+        self.syntaxTreeLayout.addWidget(self.ast_tree)
+        self.middleLayout.addLayout(self.syntaxTreeLayout)
+        self.bottomLayout.addWidget(self.analyze_button)
+        self.bottomLayout.addWidget(self.messages_label)
+        self.bottomLayout.addWidget(self.messages)
+        self.mainLayout.addLayout(self.topLayout)
+        self.mainLayout.addLayout(self.middleLayout)
+        self.mainLayout.addLayout(self.bottomLayout)
+        self.setLayout(self.mainLayout)
+        self.analyze_button.clicked.connect(self.button_analyze_click)
 
-        # Левая панель (ввод)
-        self.input_frame = ttk.LabelFrame(self.main_pane, text='Исходный код')
-        self.input_text = scrolledtext.ScrolledText(self.input_frame, width=40, height=20)
-        self.input_text.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-        self.main_pane.add(self.input_frame, weight=1)
-
-        # Кнопки
-        self.button_frame = ttk.Frame(root)
-        self.button_frame.pack(padx=10, pady=5)
-
-        self.analyze_btn = ttk.Button(self.button_frame, text='Анализировать', command=self.analyze)
-        self.analyze_btn.pack(side=tk.LEFT, padx=5)
-
-        # Область сообщений
-        self.messages_frame = ttk.LabelFrame(root, text='Результаты')
-        self.messages_frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
-
-        self.messages = scrolledtext.ScrolledText(self.messages_frame, height=8, state='disabled')
-        self.messages.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-
-        # Правая панель (дерево)
-        self.tree_frame = ttk.LabelFrame(self.main_pane, text='Синтаксическое дерево')
-        self.tree_output = scrolledtext.ScrolledText(self.tree_frame, width=40, height=20, state='disabled')
-        self.tree_output.pack(padx=5, pady=5, fill=tk.BOTH, expand=True)
-        self.main_pane.add(self.tree_frame, weight=1)
-
-    def add_message(self, text):
-        self.messages.configure(state='normal')
-        self.messages.insert(tk.END, text)
-        self.messages.configure(state='disabled')
-        self.messages.see(tk.END)
-
-    def analyze(self):
-        self.messages.configure(state='normal')
-        self.messages.delete('1.0', tk.END)
-
-        # Очистим перед выводом
-        self.tree_output.configure(state='normal')
-        self.tree_output.delete('1.0', tk.END)
-
-        input_text = self.input_text.get('1.0', tk.END).strip()
-        if not input_text:
-            self.messages.insert(tk.END, "Ошибка: Входной текст пуст!\n")
-            self.messages.configure(state='disabled')
-            return
-
+    def button_analyze_click(self):
+        self.messages.clear()
+        self.ast_tree.clear()
         try:
-            transliterator = Transliterator(input_text.splitlines())
+            transliterator = Transliterator(self.input_text.toPlainText().splitlines())
             lexer = LexicalAnalyzer(transliterator)
             syntax_analyzer = SyntaxAnalyzer(lexer)
 
-            root_node = syntax_analyzer.ParseText()
-
-            # Создание и запуск Visitor
-            from Visitor import PrintVisitor
-            visitor = PrintVisitor()
-            root_node.accept(visitor)
-
-            result = visitor.get_result()
-
-            # Выводим в окно синтаксического дерева
-            self.tree_output.insert(tk.END, result)
-            self.tree_output.configure(state='disabled')
-
-            self.add_message("Ошибок не обнаружено.\n")
+            root_node: PNode = syntax_analyzer.ParseText()
+            pv = PrintVisitor(self.ast_tree)
+            pv.visitPNode(root_node)
+            self.ast_tree.expandAll()
+            self.messages.appendPlainText("Текст правильный")
         except LexAnException as e:
-            error_msg = f"Лексическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n"
-            self.add_message(error_msg)
-            self.highlight_lex_error(e.LineIndex, e.SymIndex)
+            self.messages.appendPlainText(
+                f"Лексическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n")
+            self.locate_cursor_at_error_position(LexAnException.LineIndex,
+                                                 LexAnException.SymIndex)
+
 
         except SynAnException as e:
-            error_msg = f"Синтаксическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n"
-            self.add_message(error_msg)
-            self.highlight_syn_error(e.LineIndex, e.SymIndex, lexer)
+            self.messages.appendPlainText(
+                f"Синтаксическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n")
+            self.locate_cursor_at_error_position(LexAnException.LineIndex,
+                                                 LexAnException.SymIndex)
 
-        except Exception as e:
-            self.add_message(f"Критическая ошибка: {str(e)}\n")
+        except Exception:
+            print(traceback.format_exc())
 
-        finally:
-            self.messages.configure(state='disabled')
-            self.messages.see(tk.END)
+    def locate_cursor_at_error_position(self, line_index, sym_index, lexer=None):
+        try:
+            cursor = self.input_text.textCursor()
+            pos = sum(len(line) + 1 for line in self.input_text.toPlainText().splitlines()[:line_index]) + sym_index
 
-    def highlight_lex_error(self, line: int, pos: int):
-        """Подсветка ошибки в тексте"""
-        start = f"{line + 1}.{pos}"
-        self.input_text.tag_add('error', start, f"{start}+1c")
-        self.input_text.tag_config('error', background='red')
-        self.input_text.mark_set(tk.INSERT, start)
-        self.input_text.focus()
+            if lexer:
+                pos = pos - len(lexer.token.value)
 
-    def highlight_syn_error(self, line: int, pos: int, lexer: LexicalAnalyzer):
-        """Подсветка ошибки в тексте"""
-        start = f"{line + 1}.{pos - len(lexer.token.Value) - 1}"
-        self.input_text.tag_add('error', start, f"{start}+1c")
-        self.input_text.tag_config('error', background='red')
-        self.input_text.mark_set(tk.INSERT, start)
-        self.input_text.focus()
+            cursor.setPosition(pos)
+            cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor, 1)
+
+            self.input_text.setTextCursor(cursor)
+            self.input_text.setFocus()
+
+        except Exception:
+            print(traceback.format_exc())
 
 
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = LexerApp(root)
-    root.mainloop()
+if __name__ == "__main__":
+    app = QtWidgets.QApplication([])
+    window = FormMain()
+    window.show()
+    app.exec()

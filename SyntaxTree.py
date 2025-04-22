@@ -1,9 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from Visitor import IVisitor
-    from LexicalAnalyzer import Token
 
 
 class Node(ABC):
@@ -11,8 +6,8 @@ class Node(ABC):
         self.name = name
 
     @abstractmethod
-    def accept(self, v: 'IVisitor'):
-        pass
+    def accept(self, v: 'IVisitor') -> None:
+        ...
 
 
 class PNode(Node):
@@ -23,19 +18,19 @@ class PNode(Node):
     K: 'KNode'
 
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitPNode(self)
 
 
 class ONode(Node):
     def __init__(self):
         super().__init__('O')
 
-    second_word: 'Token'
-    equal: 'Token'
+    second_word: 'ReservedNode'
+    equal: 'ReservedNode'
     C: 'CNode'
 
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitONode(self)
 
 
 class KNode(Node, ABC):
@@ -44,17 +39,17 @@ class KNode(Node, ABC):
 
 
 class KNode1(KNode):
-    comma: str
+    comma: 'ReservedNode'
     O: ONode
     K: KNode
 
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitKNode1(self)
 
 
 class KNode2(KNode):
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitKNode2(self)
 
 
 class CNode(Node, ABC):
@@ -63,17 +58,25 @@ class CNode(Node, ABC):
 
 
 class CNode1(CNode):
-    first_word: 'Token'
-    first_word: 'Token'
+    first_word1: 'ReservedNode'
+    first_word2: 'ReservedNode'
 
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitCNode1(self)
 
 
 class CNode2(CNode):
-    LeftParen: 'Token'
+    LeftParen: 'ReservedNode'
     O: ONode
-    LeftParen: 'Token'
+    RightParen: 'ReservedNode'
 
     def accept(self, v: 'IVisitor'):
-        v.visit(self)
+        v.visitCNode2(self)
+
+
+class ReservedNode(Node):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+    def accept(self, v: 'IVisitor'):
+        v.visitReservedNode(self)
