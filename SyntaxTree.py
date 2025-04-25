@@ -1,4 +1,9 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from Visitor import IVisitor
 
 
 class Node(ABC):
@@ -6,7 +11,7 @@ class Node(ABC):
         self.name = name
 
     @abstractmethod
-    def accept(self, v: 'IVisitor') -> None:
+    def accept(self, v: IVisitor) -> None:
         ...
 
 
@@ -17,7 +22,7 @@ class PNode(Node):
     O: 'ONode'
     K: 'KNode'
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitPNode(self)
 
 
@@ -29,7 +34,7 @@ class ONode(Node):
     equal: 'ReservedNode'
     C: 'CNode'
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitONode(self)
 
 
@@ -43,12 +48,12 @@ class KNode1(KNode):
     O: ONode
     K: KNode
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitKNode1(self)
 
 
 class KNode2(KNode):
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitKNode2(self)
 
 
@@ -61,7 +66,7 @@ class CNode1(CNode):
     first_word1: 'ReservedNode'
     first_word2: 'ReservedNode'
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitCNode1(self)
 
 
@@ -70,7 +75,7 @@ class CNode2(CNode):
     O: ONode
     RightParen: 'ReservedNode'
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitCNode2(self)
 
 
@@ -78,5 +83,5 @@ class ReservedNode(Node):
     def __init__(self, name: str):
         super().__init__(name)
 
-    def accept(self, v: 'IVisitor'):
+    def accept(self, v: IVisitor):
         v.visitReservedNode(self)

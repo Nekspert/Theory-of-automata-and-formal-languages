@@ -81,15 +81,13 @@ class FormMain(QtWidgets.QWidget):
         except LexAnException as e:
             self.messages.appendPlainText(
                 f"Лексическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n")
-            self.locate_cursor_at_error_position(LexAnException.LineIndex,
-                                                 LexAnException.SymIndex)
+            self.locate_cursor_at_error_position(e.LineIndex, e.SymIndex)
 
 
         except SynAnException as e:
             self.messages.appendPlainText(
                 f"Синтаксическая ошибка: {e} (Строка {e.LineIndex + 1}, позиция {e.SymIndex + 1})\n")
-            self.locate_cursor_at_error_position(LexAnException.LineIndex,
-                                                 LexAnException.SymIndex)
+            self.locate_cursor_at_error_position(e.LineIndex, e.SymIndex, lexer)
 
         except Exception:
             print(traceback.format_exc())
@@ -100,7 +98,7 @@ class FormMain(QtWidgets.QWidget):
             pos = sum(len(line) + 1 for line in self.input_text.toPlainText().splitlines()[:line_index]) + sym_index
 
             if lexer:
-                pos = pos - len(lexer.token.value)
+                pos = pos - len(lexer.token.Value)
 
             cursor.setPosition(pos)
             cursor.movePosition(QTextCursor.MoveOperation.Right, QTextCursor.MoveMode.KeepAnchor, 1)

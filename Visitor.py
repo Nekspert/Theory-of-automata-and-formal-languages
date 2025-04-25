@@ -90,4 +90,4 @@ class PrintVisitor(IVisitor):
         self.stack.pop()
 
     def visitKNode2(self, node: KNode2) -> None:
-        item = self.createQTreeWidgetItem(node.name)
+        _ = self.createQTreeWidgetItem(node.name)
