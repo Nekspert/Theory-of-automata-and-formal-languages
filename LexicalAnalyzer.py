@@ -6,10 +6,10 @@ from Transliterator import Transliterator
 class TokenKind(Enum):
     Number = auto()
     Identifier = auto()
-    Comma = auto()
-    Equal = auto()
-    LeftParen = auto()
-    RightParen = auto()
+    Comma = ','
+    Equal = '='
+    LeftParen = '('
+    RightParen = ')'
     EndOfText = auto()
     Unknown = auto()
 
