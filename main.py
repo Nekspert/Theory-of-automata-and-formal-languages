@@ -17,7 +17,7 @@ class FormMain(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         self.init_ui()
-        self.setWindowTitle("Лабораторная работа №3 - Построение синтаксического дерева")
+        self.setWindowTitle("Лабораторная работа №4 - Разработка контекстного анализатора")
         self.setGeometry(100, 100, 1000, 800)
 
     def init_ui(self):
